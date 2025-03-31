@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Exceltomysql.Application.Dtos.Requests;
 using MySql.Data.MySqlClient;
 using OfficeOpenXml;
@@ -40,7 +41,7 @@ namespace Exceltomysql.Domain.Utils
             }
         }
 
-        public int InsertRows(ExcelWorksheet worksheet, int rowCount, int columnCount, string tableName, string connectionString)
+        public async Task<int> InsertRows(ExcelWorksheet worksheet, int rowCount, int columnCount, string tableName, string connectionString)
         {
             int rowsAffected = 0;
             using (var conn = new MySqlConnection(connectionString))
@@ -53,10 +54,10 @@ namespace Exceltomysql.Domain.Utils
                     {
                         string value = worksheet.Cells[row, col].Text.Trim();
                         insertQuery += string.IsNullOrEmpty(value)
-                            ? "NULL, "  // Handle NULL values
+                            ? "NULL, "
                             : int.TryParse(value, out _) || double.TryParse(value, out _)
-                                ? $"{value}, "  // Numeric values
-                                : $"'{value.Replace("'", "")}', "; // String values with sanitized quotes
+                                ? $"{value}, "
+                                : $"'{value.Replace("'", "")}', ";
                     }
                     insertQuery = insertQuery.TrimEnd(',', ' ') + ");";
 
@@ -64,7 +65,7 @@ namespace Exceltomysql.Domain.Utils
                     {
                         rowsAffected++;
                         Console.WriteLine($"Inserting row {rowsAffected} ...");
-                        cmd.ExecuteNonQuery();
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 }
             }

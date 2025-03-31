@@ -61,7 +61,7 @@ namespace Exceltomysql.Application.Services
                     string connectionString = _mySqlHelper.BuildMySqlConnectionString(mySqlConfig);
                     string tableCreated = _mySqlHelper.ExecMySqlQuery(createTableQuery, connectionString);
                     Console.WriteLine($"Creating table {tableName} result:{tableCreated}");
-                    rowsAffected = _mySqlHelper.InsertRows(worksheet, rowCount, columnCount, tableName, connectionString);
+                    rowsAffected = await _mySqlHelper.InsertRows(worksheet, rowCount, columnCount, tableName, connectionString);
                     stopwatch.Stop();
                     TimeSpan elapsed = stopwatch.Elapsed;
                     Console.WriteLine($"Table {tableName} created - {rowsAffected} rows inserted - Execution time: {elapsed.Minutes} min {elapsed.Seconds} sec");
