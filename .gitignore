@@ -1,0 +1,51 @@
+# Build and binaries
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.app/
+*.ipa/
+*.class/
+
+# Visual Studio related files
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Logs and temp files
+*.log
+*.cache
+*.vs/
+*.ncb
+*.dbmdl
+*.sdf
+*.sln.bin
+*.ipch
+*.aps
+*.pch
+*.ilk
+*.o
+*.obj
+*.tmp
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.assets.json
+.nuget/
+
+# Entity Framework Migrations
+Migrations/
+
+# Rider / JetBrains IDE
+.idea/
+*.iml
+
+# Other
+Thumbs.db
+Desktop.ini
