@@ -18,14 +18,14 @@ namespace Exceltomysql.Application.Services
             this._fileHelper = fileHelper;
             this._mySqlHelper = mySqlHelper;
         }
-        public Task<ProcessResponse> ProcessExcelFile(IFormFile file, MySqlConfigDTO mySqlConfig)
+        public async Task<ProcessResponse> ProcessExcelFile(IFormFile file, MySqlConfigDTO mySqlConfig)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             Console.WriteLine("... Start ...");
             var tempFilePath = _fileHelper.GetTempFile(file);
             Console.WriteLine("Reading excel file...");
             ExcelWorksheet worksheet;
-            ProcessResponse processResponse = new ProcessResponse("Failes",500,0,"00:00","");
+            ProcessResponse processResponse = new ProcessResponse("Failed",500,0,"00:00","");
             using (var package = new ExcelPackage(new FileInfo(tempFilePath)))
             {
                 try
@@ -72,7 +72,7 @@ namespace Exceltomysql.Application.Services
                 {
                     Console.WriteLine($"Error: {e.Message}");
                 }
-                return Task.FromResult(processResponse);
+                return processResponse;
                 
             }
         }
