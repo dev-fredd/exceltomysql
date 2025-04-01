@@ -53,11 +53,15 @@ namespace Exceltomysql.Domain.Utils
                     for (int col = 1; col <= columnCount; col++)
                     {
                         string value = worksheet.Cells[row, col].Text.Trim();
-                        insertQuery += string.IsNullOrEmpty(value)
+                        DateTime parsedDate;
+                        string[] dateFormats = { "yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yy", "dd/MM/yyyy", "yyyy-MM-dd HH:mm:ss", "MM/dd/yyyy HH:mm:ss" };
+                        insertQuery += string.IsNullOrEmpty(value.Replace(" ",""))
                             ? "NULL, "
                             : int.TryParse(value, out _) || double.TryParse(value, out _)
                                 ? $"{value}, "
-                                : $"'{value.Replace("'", "")}', ";
+                                : DateTime.TryParseExact(value, dateFormats, null, System.Globalization.DateTimeStyles.None, out parsedDate)
+                                    ? $"'{parsedDate.ToString("yyyy-MM-dd HH:mm:ss")}', "
+                                    : $"'{value.Replace("'", "")}', ";
                     }
                     insertQuery = insertQuery.TrimEnd(',', ' ') + ");";
 
