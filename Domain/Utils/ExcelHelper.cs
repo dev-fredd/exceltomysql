@@ -82,9 +82,11 @@ namespace Exceltomysql.Domain.Utils
             {
                 string cellValue = worksheet.Cells[row, col].Text.Trim();
 
-                if (cellValue.Length > 1)
+                if (cellValue.Length > 1 && !cellValue.Trim().Equals(""))
                 {
                     finalColumn = col;
+                }else{
+                    return finalColumn;
                 }
             }
             return finalColumn;

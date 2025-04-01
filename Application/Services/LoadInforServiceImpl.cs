@@ -54,7 +54,7 @@ namespace Exceltomysql.Application.Services
                     }
                     int rowsAffected = 0;
                     int rowCount = worksheet.Dimension.End.Row;
-                    string tableName = file.FileName.Substring(0, file.FileName.IndexOf(".")).ToLower();
+                    string tableName = _mySqlHelper.CapitalizeString(file.FileName.Substring(0, file.FileName.IndexOf(".")).ToLower());
                     string createTableQuery = _mySqlHelper.GetQueryCreateTable(worksheet, tableName);
                     string connectionString = _mySqlHelper.BuildMySqlConnectionString(mySqlConfig);
                     string tableCreated = _mySqlHelper.ExecMySqlQuery(createTableQuery, connectionString);

@@ -9,10 +9,12 @@ namespace Exceltomysql.Domain.Utils
     public class MySqlUtilHelper
     {
         private readonly ExcelHelper _excelHelper;
+        private readonly IConfiguration _configuration;
 
-        public MySqlUtilHelper(ExcelHelper excelHelper)
+        public MySqlUtilHelper(ExcelHelper excelHelper, IConfiguration configuration)
         {
             this._excelHelper = excelHelper;
+            this._configuration = configuration;
         }
         public string BuildMySqlConnectionString(MySqlConfigDTO mySqlConfigDTO)
         {
@@ -28,7 +30,7 @@ namespace Exceltomysql.Domain.Utils
                     conn.Open();
                     using (var cmd = new MySqlCommand(query, conn))
                     {
-                        //Console.WriteLine($"Executing Query: {query}...");
+                        Console.WriteLine($"Executing Query: {query}...");
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -56,7 +58,7 @@ namespace Exceltomysql.Domain.Utils
                         string value = worksheet.Cells[row, col].Text.Trim();
                         DateTime parsedDate;
                         string[] dateFormats = { "yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yy", "dd/MM/yyyy", "yyyy-MM-dd HH:mm:ss", "MM/dd/yyyy HH:mm:ss" };
-                        insertQuery += string.IsNullOrEmpty(value.Replace(" ",""))
+                        insertQuery += string.IsNullOrEmpty(value.Replace(" ", ""))
                             ? "NULL, "
                             : int.TryParse(value, out _) || double.TryParse(value, out _)
                                 ? $"{value}, "
@@ -65,7 +67,7 @@ namespace Exceltomysql.Domain.Utils
                                     : $"'{value.Replace("'", "")}', ";
                     }
                     insertQuery = insertQuery.TrimEnd(',', ' ') + ");";
-                    Console.WriteLine(insertQuery);
+                    //Console.WriteLine(insertQuery);
                     using (var cmd = new MySqlCommand(insertQuery, conn))
                     {
                         rowsAffected++;
@@ -79,9 +81,10 @@ namespace Exceltomysql.Domain.Utils
 
         public string GetQueryCreateTable(ExcelWorksheet worksheet, string tableName)
         {
+            List<string> mysqlReservedWords = _configuration.GetSection("MySQLReservedWords").Get<List<string>>();
             int columnCount = _excelHelper.GetColumnCount(worksheet);
             int rowCount = worksheet.Dimension.End.Row;
-            string createTableQuery = $"CREATE TABLE IF NOT EXISTS {tableName} (id MEDIUMINT NOT NULL AUTO_INCREMENT PRIMARY KEY,";
+            string createTableQuery = $"CREATE TABLE IF NOT EXISTS {tableName} (Id MEDIUMINT NOT NULL AUTO_INCREMENT PRIMARY KEY,";
             List<string> columns = new List<string>();
 
             for (int col = 1; col <= columnCount; col++)
@@ -91,13 +94,20 @@ namespace Exceltomysql.Domain.Utils
                     .Replace("Á", "A").Replace("É", "E").Replace("Í", "I").Replace("Ó", "O").Replace("Ú", "U")
                     .Replace("ñ", "n").Replace("Ñ", "N").ToLower();
 
+                foreach (var word in mysqlReservedWords)
+                {
+                    if (word.ToLower().Equals(columnName))
+                    {
+                        columnName += "_1";
+                    }
+                }
                 int countColumns = columns.Where(n => Regex.Replace(n, "[^a-zA-Z]", "").Replace("_", "") == Regex.Replace(columnName, "[^a-zA-Z]", "").Replace("_", "")).Count();
                 if (countColumns > 0)
                 {
                     columnName = $"{columnName}_{countColumns + 1}";
                     columnName = columnName.TrimStart('_').TrimEnd('_').ToLower();
                 }
-                worksheet.Cells[1, col].Value = columnName;
+                worksheet.Cells[1, col].Value = CapitalizeString(columnName);
                 columns.Add(columnName);
 
 
@@ -116,5 +126,16 @@ namespace Exceltomysql.Domain.Utils
             createTableQuery = createTableQuery.TrimEnd(',', ' ') + ");";
             return createTableQuery;
         }
+
+        public string CapitalizeString(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return input; 
+            }
+            return char.ToUpper(input[0]) + input.Substring(1).ToLower();
+        }
     }
+
+
 }
