@@ -53,14 +53,13 @@ namespace Exceltomysql.Application.Services
                             "Please check the file contains data in the first sheet.");
                     }
                     int rowsAffected = 0;
-                    int columnCount = worksheet.Dimension.End.Column;
                     int rowCount = worksheet.Dimension.End.Row;
                     string tableName = file.FileName.Substring(0, file.FileName.IndexOf(".")).ToLower();
                     string createTableQuery = _mySqlHelper.GetQueryCreateTable(worksheet, tableName);
                     string connectionString = _mySqlHelper.BuildMySqlConnectionString(mySqlConfig);
                     string tableCreated = _mySqlHelper.ExecMySqlQuery(createTableQuery, connectionString);
                     Console.WriteLine($"Creating table {tableName} result:{tableCreated}");
-                    rowsAffected = await _mySqlHelper.InsertRows(worksheet, rowCount, columnCount, tableName, connectionString);
+                    rowsAffected = await _mySqlHelper.InsertRows(worksheet, rowCount, tableName, connectionString);
                     stopwatch.Stop();
                     TimeSpan elapsed = stopwatch.Elapsed;
                     Console.WriteLine($"Table {tableName} created - {rowsAffected} rows inserted - Execution time: {elapsed.Minutes} min {elapsed.Seconds} sec");

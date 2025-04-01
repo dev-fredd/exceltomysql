@@ -41,8 +41,9 @@ namespace Exceltomysql.Domain.Utils
             }
         }
 
-        public async Task<int> InsertRows(ExcelWorksheet worksheet, int rowCount, int columnCount, string tableName, string connectionString)
+        public async Task<int> InsertRows(ExcelWorksheet worksheet, int rowCount, string tableName, string connectionString)
         {
+            int columnCount = _excelHelper.GetColumnCount(worksheet);
             int rowsAffected = 0;
             using (var conn = new MySqlConnection(connectionString))
             {
@@ -64,7 +65,7 @@ namespace Exceltomysql.Domain.Utils
                                     : $"'{value.Replace("'", "")}', ";
                     }
                     insertQuery = insertQuery.TrimEnd(',', ' ') + ");";
-                    //Console.WriteLine(insertQuery);
+                    Console.WriteLine(insertQuery);
                     using (var cmd = new MySqlCommand(insertQuery, conn))
                     {
                         rowsAffected++;
@@ -78,9 +79,9 @@ namespace Exceltomysql.Domain.Utils
 
         public string GetQueryCreateTable(ExcelWorksheet worksheet, string tableName)
         {
-            int columnCount = worksheet.Dimension.End.Column;
+            int columnCount = _excelHelper.GetColumnCount(worksheet);
             int rowCount = worksheet.Dimension.End.Row;
-            string createTableQuery = $"CREATE TABLE IF NOT EXISTS {tableName} (id MEDIUMINT NOT NULL AUTO_INCREMENT,";
+            string createTableQuery = $"CREATE TABLE IF NOT EXISTS {tableName} (id MEDIUMINT NOT NULL AUTO_INCREMENT PRIMARY KEY,";
             List<string> columns = new List<string>();
 
             for (int col = 1; col <= columnCount; col++)

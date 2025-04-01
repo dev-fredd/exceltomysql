@@ -70,6 +70,25 @@ namespace Exceltomysql.Domain.Utils
             return values;
         }
 
+
+        public int GetColumnCount(ExcelWorksheet worksheet)
+        {
+            int lastColumn = worksheet.Dimension.End.Column;
+            int row = 1;
+
+            int finalColumn = 1;
+
+            for (int col = 1; col <= lastColumn; col++)
+            {
+                string cellValue = worksheet.Cells[row, col].Text.Trim();
+
+                if (cellValue.Length > 1)
+                {
+                    finalColumn = col;
+                }
+            }
+            return finalColumn;
+        }
         public List<ColumnInfo> GetMaxColumnLengths(ExcelWorksheet worksheet)
         {
             var maxColumnInfo = new List<ColumnInfo>();
