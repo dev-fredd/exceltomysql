@@ -28,7 +28,7 @@ namespace Exceltomysql.Domain.Utils
                     conn.Open();
                     using (var cmd = new MySqlCommand(query, conn))
                     {
-                        Console.WriteLine($"Executing Query: {query}...");
+                        //Console.WriteLine($"Executing Query: {query}...");
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -49,7 +49,7 @@ namespace Exceltomysql.Domain.Utils
                 conn.Open();
                 for (int row = 2; row <= rowCount; row++)
                 {
-                    string insertQuery = $"INSERT INTO {tableName} VALUES (";
+                    string insertQuery = $"INSERT INTO {tableName} VALUES (NULL,";
                     for (int col = 1; col <= columnCount; col++)
                     {
                         string value = worksheet.Cells[row, col].Text.Trim();
@@ -64,7 +64,7 @@ namespace Exceltomysql.Domain.Utils
                                     : $"'{value.Replace("'", "")}', ";
                     }
                     insertQuery = insertQuery.TrimEnd(',', ' ') + ");";
-
+                    //Console.WriteLine(insertQuery);
                     using (var cmd = new MySqlCommand(insertQuery, conn))
                     {
                         rowsAffected++;
@@ -80,7 +80,7 @@ namespace Exceltomysql.Domain.Utils
         {
             int columnCount = worksheet.Dimension.End.Column;
             int rowCount = worksheet.Dimension.End.Row;
-            string createTableQuery = $"CREATE TABLE IF NOT EXISTS {tableName} (";
+            string createTableQuery = $"CREATE TABLE IF NOT EXISTS {tableName} (id MEDIUMINT NOT NULL AUTO_INCREMENT,";
             List<string> columns = new List<string>();
 
             for (int col = 1; col <= columnCount; col++)
