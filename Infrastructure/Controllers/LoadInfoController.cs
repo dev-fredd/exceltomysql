@@ -1,4 +1,5 @@
 using Exceltomysql.Application.Dtos.Requests;
+using Exceltomysql.Application.Dtos.Responses;
 using Exceltomysql.Domain.Ports;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,9 +17,14 @@ namespace Infrastructure.Controllers
         }
         [HttpPost]
         [Route("process")]
-        public async Task<IActionResult> ProcessFile([FromForm] IFormFile file, [FromForm] MySqlConfigDTO mySqlConfig)
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(typeof(ProcessResponse), 200)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        [Produces("application/json", "text/plain")]
+        public async Task<IActionResult> ProcessFile([FromForm] FileUploadRequest fileUploadRequest, [FromForm] MySqlConfigDTO mySqlConfig)
         {
-            var result = await _loadInfoService.ProcessExcelFile(file, mySqlConfig);
+            var result = await _loadInfoService.ProcessExcelFile(fileUploadRequest.File, mySqlConfig);
 
             return Ok(result);
         }

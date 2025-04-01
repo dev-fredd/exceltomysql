@@ -1,3 +1,4 @@
+using System.Globalization;
 using Exceltomysql.Domain.Models;
 using OfficeOpenXml;
 
@@ -9,21 +10,42 @@ namespace Exceltomysql.Domain.Utils
         {
             bool hasLetters = columnValues.Any(value => value.Any(char.IsLetter));
 
-            if (hasLetters)
-            {
-                return maxLength <= 255 ? $"VARCHAR({maxLength})" : "TEXT";
-            }
-
             if (columnValues.All(value => int.TryParse(value, out _)))
                 return "INT";
 
             if (columnValues.All(value => double.TryParse(value, out _)))
                 return "DOUBLE";
 
-            if (columnValues.All(value => DateTime.TryParse(value, out _)))
+            string[] dateFormats = { "yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yy", "dd/MM/yyyy", "yyyy-MM-dd HH:mm:ss", "MM/dd/yyyy HH:mm:ss" };
+            if (columnValues.All(value =>
+                dateFormats.Any(format =>
+                    DateTime.TryParseExact(value.Replace("'", ""), format, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out _))))
+            {
                 return "DATETIME";
+            }
 
-            return maxLength <= 255 ? $"VARCHAR({maxLength})" : "TEXT";
+            if (hasLetters)
+            {
+                if (maxLength <= 255)
+                {
+                    return $"VARCHAR({maxLength})";
+                }
+                else if (maxLength <= 65535)
+                {
+                    return "TEXT";
+                }
+                else if (maxLength <= 16777215)
+                {
+                    return "MEDIUMTEXT";
+                }
+                else
+                {
+                    return "LONGTEXT";
+                }
+            }
+
+
+            return "TEXT";
         }
 
         public List<string> GetColumnValues(ExcelWorksheet worksheet, int column)
@@ -39,7 +61,7 @@ namespace Exceltomysql.Domain.Utils
             if (column < 1 || column > colCount)
                 throw new ArgumentOutOfRangeException(nameof(column), $"Column index {column} is out of range. Max column: {colCount}");
 
-            for (int row = 1; row <= rowCount; row++) // Read each row in the column
+            for (int row = 2; row <= rowCount; row++) // Read each row in the column
             {
                 string cellValue = worksheet.Cells[row, column].Text.Trim();
                 values.Add(cellValue);
