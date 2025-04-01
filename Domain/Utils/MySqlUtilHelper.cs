@@ -80,7 +80,7 @@ namespace Exceltomysql.Domain.Utils
         {
             int columnCount = worksheet.Dimension.End.Column;
             int rowCount = worksheet.Dimension.End.Row;
-            string createTableQuery = $"CREATE TABLE {tableName} (";
+            string createTableQuery = $"CREATE TABLE IF NOT EXISTS {tableName} (";
             List<string> columns = new List<string>();
 
             for (int col = 1; col <= columnCount; col++)
