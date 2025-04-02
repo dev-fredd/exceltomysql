@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Exceltomysql.Application.Dtos.Requests;
@@ -50,24 +51,29 @@ namespace Exceltomysql.Domain.Utils
             using (var conn = new MySqlConnection(connectionString))
             {
                 conn.Open();
+                var columnTypes = _excelHelper.GetColumnTypes(worksheet);
                 for (int row = 2; row <= rowCount; row++)
                 {
                     string insertQuery = $"INSERT INTO {tableName} VALUES (NULL,";
                     for (int col = 1; col <= columnCount; col++)
                     {
                         string value = worksheet.Cells[row, col].Text.Trim();
-                        DateTime parsedDate;
                         string[] dateFormats = { "yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yy", "dd/MM/yyyy", "yyyy-MM-dd HH:mm:ss", "MM/dd/yyyy HH:mm:ss" };
-                        insertQuery += string.IsNullOrEmpty(value.Replace(" ", ""))
-                            ? "NULL, "
-                            : int.TryParse(value, out _) || double.TryParse(value, out _)
-                                ? $"{value}, "
-                                : DateTime.TryParseExact(value, dateFormats, null, System.Globalization.DateTimeStyles.None, out parsedDate)
-                                    ? $"'{parsedDate.ToString("yyyy-MM-dd HH:mm:ss")}', "
-                                    : $"'{value.Replace("'", "")}', ";
+                        var colType = columnTypes.ElementAt(col - 1);
+                        insertQuery += colType switch
+                        {
+                            "INT" => int.TryParse(value, out _) ? $"{value}, " : "NULL, ",
+                            "DOUBLE" => double.TryParse(value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out double parsedDouble)
+                                            ? $"{parsedDouble.ToString(CultureInfo.InvariantCulture)}, "
+                                            : "NULL, ",
+                            "DATETIME" => DateTime.TryParseExact(value, dateFormats, null, System.Globalization.DateTimeStyles.None, out DateTime parsedDate)
+                                            ? $"'{parsedDate:yyyy-MM-dd HH:mm:ss}', "
+                                            : "NULL, ",
+                            _ => string.IsNullOrEmpty(value) ? "NULL, " : $"'{value.Replace("'", "''")}', " // For VARCHAR, TEXT, etc.
+                        };
+
                     }
                     insertQuery = insertQuery.TrimEnd(',', ' ') + ");";
-                    //Console.WriteLine(insertQuery);
                     using (var cmd = new MySqlCommand(insertQuery, conn))
                     {
                         rowsAffected++;
@@ -83,8 +89,9 @@ namespace Exceltomysql.Domain.Utils
         {
             List<string> mysqlReservedWords = _configuration.GetSection("MySQLReservedWords").Get<List<string>>();
             int columnCount = _excelHelper.GetColumnCount(worksheet);
+            Console.WriteLine($"GetQueryCreateTable columnCount: {columnCount}");
             int rowCount = worksheet.Dimension.End.Row;
-            string createTableQuery = $"CREATE TABLE IF NOT EXISTS {tableName} (Id MEDIUMINT NOT NULL AUTO_INCREMENT PRIMARY KEY,";
+            string createTableQuery = $"CREATE TABLE IF NOT EXISTS {tableName} (Id MEDIUMINT AUTO_INCREMENT PRIMARY KEY,";
             List<string> columns = new List<string>();
 
             for (int col = 1; col <= columnCount; col++)
@@ -98,7 +105,7 @@ namespace Exceltomysql.Domain.Utils
                 {
                     if (word.ToLower().Equals(columnName))
                     {
-                        columnName += "_1";
+                        columnName = columnName + "_1";
                     }
                 }
                 int countColumns = columns.Where(n => Regex.Replace(n, "[^a-zA-Z]", "").Replace("_", "") == Regex.Replace(columnName, "[^a-zA-Z]", "").Replace("_", "")).Count();
@@ -119,8 +126,8 @@ namespace Exceltomysql.Domain.Utils
             for (int col = 1; col <= columnCount; col++)
             {
                 string columnType = _excelHelper.DetectDataTypeByColumn(_excelHelper.GetColumnValues(worksheet, col), maxLengths.ElementAt(col - 1).MaxLength);
-
-                createTableQuery += $"{maxLengths.ElementAt(col - 1).ColumnName} {columnType}, ";
+                string nameColumn = maxLengths.ElementAt(col - 1).ColumnName;
+                createTableQuery += nameColumn + " " + columnType + ", ";
             }
 
             createTableQuery = createTableQuery.TrimEnd(',', ' ') + ");";
@@ -131,7 +138,7 @@ namespace Exceltomysql.Domain.Utils
         {
             if (string.IsNullOrEmpty(input))
             {
-                return input; 
+                return input;
             }
             return char.ToUpper(input[0]) + input.Substring(1).ToLower();
         }

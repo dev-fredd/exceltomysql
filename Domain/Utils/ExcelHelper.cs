@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Exceltomysql.Domain.Models;
 using OfficeOpenXml;
 
@@ -6,6 +7,28 @@ namespace Exceltomysql.Domain.Utils
 {
     public class ExcelHelper
     {
+        private readonly IConfiguration _configuration;
+        public ExcelHelper(IConfiguration configuration)
+        {
+            this._configuration = configuration;
+        }
+
+
+
+        public List<string> GetColumnTypes(ExcelWorksheet worksheet)
+        {
+            int columnCount = GetColumnCount(worksheet);
+            var maxLengths = GetMaxColumnLengths(worksheet);
+            List<string> types = new List<string>();
+            for (int col = 1; col <= columnCount; col++)
+            {
+                string columnType = DetectDataTypeByColumn(GetColumnValues(worksheet, col), maxLengths.ElementAt(col - 1).MaxLength);
+                types.Add(columnType);
+
+            }
+            return types;
+        }
+
         public string DetectDataTypeByColumn(List<string> columnValues, int maxLength)
         {
             bool hasLetters = columnValues.Any(value => value.Any(char.IsLetter));
@@ -45,7 +68,7 @@ namespace Exceltomysql.Domain.Utils
             }
 
 
-            return "TEXT";
+            return "LONGTEXT";
         }
 
         public List<string> GetColumnValues(ExcelWorksheet worksheet, int column)
@@ -63,6 +86,7 @@ namespace Exceltomysql.Domain.Utils
 
             for (int row = 2; row <= rowCount; row++) // Read each row in the column
             {
+
                 string cellValue = worksheet.Cells[row, column].Text.Trim();
                 values.Add(cellValue);
             }
@@ -85,7 +109,9 @@ namespace Exceltomysql.Domain.Utils
                 if (cellValue.Length > 0 && !cellValue.Trim().Equals(""))
                 {
                     finalColumn = col;
-                }else{
+                }
+                else
+                {
                     return finalColumn;
                 }
             }
@@ -93,9 +119,10 @@ namespace Exceltomysql.Domain.Utils
         }
         public List<ColumnInfo> GetMaxColumnLengths(ExcelWorksheet worksheet)
         {
+            List<string> mysqlReservedWords = _configuration.GetSection("MySQLReservedWords").Get<List<string>>();
             var maxColumnInfo = new List<ColumnInfo>();
             int rowCount = worksheet.Dimension.Rows;
-            int colCount = worksheet.Dimension.Columns;
+            int colCount = GetColumnCount(worksheet);
 
             for (int col = 1; col <= colCount; col++)
             {
@@ -112,6 +139,16 @@ namespace Exceltomysql.Domain.Utils
                         maxValue = cellValue;
                     }
                 }
+
+
+                foreach (var word in mysqlReservedWords)
+                {
+                    if (word.ToLower().Equals(columnName))
+                    {
+                        columnName = columnName + "_1";
+                    }
+                }
+                columnName = Regex.Replace(columnName, "[^a-zA-Z0-9_]", "");
                 // maxLength = maxLength == 0 ? 100 : maxLength;
                 maxColumnInfo.Add(new ColumnInfo
                 {
