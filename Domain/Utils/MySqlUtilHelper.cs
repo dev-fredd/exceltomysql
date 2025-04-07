@@ -91,7 +91,7 @@ namespace Exceltomysql.Domain.Utils
             int columnCount = _excelHelper.GetColumnCount(worksheet);
             Console.WriteLine($"GetQueryCreateTable columnCount: {columnCount}");
             int rowCount = worksheet.Dimension.End.Row;
-            string createTableQuery = $"CREATE TABLE IF NOT EXISTS {tableName} (Id MEDIUMINT AUTO_INCREMENT PRIMARY KEY,";
+            string createTableQuery = $"CREATE TABLE IF NOT EXISTS {tableName} (IdPK MEDIUMINT AUTO_INCREMENT PRIMARY KEY,";
             List<string> columns = new List<string>();
 
             for (int col = 1; col <= columnCount; col++)
